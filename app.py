@@ -110,29 +110,32 @@ def cleanup_file(path: str):
 
 def download_audio(video_id: str) -> str:
     url = f"https://www.youtube.com/watch?v={video_id}"
-    out_template = os.path.join(DOWNLOAD_DIR, f"{video_id}.%(ext)s")
 
     print(f"[YT-DLP] Initializing core engine for download. Target URL: {url}", flush=True)
+    
     ydl_opts = {
         "format": "140",
-        "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
+        "outtmpl": "cache/%(id)s.%(ext)s",  # FIX: Save by ID so the cache actually works
         "noplaylist": True,
         "quiet": True,
         "writethumbnail": True,
-        "embedmetadata": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "m4a",
             },
             {
-                "key": "EmbedThumbnail",
-                "already_have_thumbnail": False,
-            },
-            {
                 "key": "FFmpegThumbnailsConvertor",
                 "format": "png",
                 "when": "before_dl",
+            },
+            {
+                "key": "FFmpegMetadata", # FIX: This explicitly writes the Title and Artist
+                "add_metadata": True,
+            },
+            {
+                "key": "EmbedThumbnail",
+                "already_have_thumbnail": False,
             },
         ],
         "postprocessor_args": {
@@ -142,18 +145,15 @@ def download_audio(video_id: str) -> str:
     
     start_time = time.time()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # Extract info first to get the actual title used by outtmpl
-        info_dict = ydl.extract_info(url, download=True)
-        # yt-dlp replaces restricted characters (like / or :) with underscores; 
-        # ydl.prepare_filename ensures we get the exact string used for the filename.
-        filename_title = info_dict.get('title', video_id)
+        # We no longer need to manually extract info just to get the title!
+        ydl.download([url])
         
     elapsed = time.time() - start_time
-    print(f"[YT-DLP] Processing completed in {elapsed:.2f}s. Locating output file structure...", flush=True)
+    print(f"[YT-DLP] Processing completed in {elapsed:.2f}s.", flush=True)
 
-    # Search condition updated to look for the video title instead of video_id
+    # Search for the output file using the ID, matching the cache logic
     for ext in ["mp3", "m4a", "webm"]:
-        path = os.path.join(DOWNLOAD_DIR, f"{filename_title}.{ext}")
+        path = os.path.join(DOWNLOAD_DIR, f"{video_id}.{ext}")
         if os.path.exists(path):
             print(f"[YT-DLP] Validated output file match found: {path}", flush=True)
             return path
