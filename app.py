@@ -115,7 +115,7 @@ def download_audio(video_id: str) -> str:
     print(f"[YT-DLP] Initializing core engine for download. Target URL: {url}", flush=True)
     ydl_opts = {
         "format": "140",
-        "outtmpl": "%(title)s.%(ext)s",
+        "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
         "noplaylist": True,
         "quiet": True,
         "writethumbnail": True,
@@ -154,9 +154,6 @@ def download_audio(video_id: str) -> str:
     # Search condition updated to look for the video title instead of video_id
     for ext in ["mp3", "m4a", "webm"]:
         path = os.path.join(DOWNLOAD_DIR, f"{filename_title}.{ext}")
-        print(path)
-        print(filename_title)
-        print(info_dict)
         if os.path.exists(path):
             print(f"[YT-DLP] Validated output file match found: {path}", flush=True)
             return path
