@@ -114,19 +114,32 @@ def download_audio(video_id: str) -> str:
 
     print(f"[YT-DLP] Initializing core engine for download. Target URL: {url}", flush=True)
     ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": out_template,
+        "format": "140",
+        "outtmpl": "%(title)s.%(ext)s",
         "noplaylist": True,
         "quiet": True,
+        "writethumbnail": True,
+        "embedmetadata": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "0",
-            }
+                "preferredcodec": "m4a",
+            },
+            {
+                "key": "EmbedThumbnail",
+                "already_have_thumbnail": False,
+            },
+            {
+                "key": "FFmpegThumbnailsConvertor",
+                "format": "png",
+                "when": "before_dl",
+            },
         ],
+        "postprocessor_args": {
+            "ffmpeg": ["-vf", "crop=ih:ih"],
+        },
     }
-
+    
     start_time = time.time()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
