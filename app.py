@@ -142,12 +142,18 @@ def download_audio(video_id: str) -> str:
     
     start_time = time.time()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        # Extract info first to get the actual title used by outtmpl
+        info_dict = ydl.extract_info(url, download=True)
+        # yt-dlp replaces restricted characters (like / or :) with underscores; 
+        # ydl.prepare_filename ensures we get the exact string used for the filename.
+        filename_title = info_dict.get('title', video_id)
+        
     elapsed = time.time() - start_time
     print(f"[YT-DLP] Processing completed in {elapsed:.2f}s. Locating output file structure...", flush=True)
 
+    # Search condition updated to look for the video title instead of video_id
     for ext in ["mp3", "m4a", "webm"]:
-        path = os.path.join(DOWNLOAD_DIR, f"{video_id}.{ext}")
+        path = os.path.join(DOWNLOAD_DIR, f"{filename_title}.{ext}")
         if os.path.exists(path):
             print(f"[YT-DLP] Validated output file match found: {path}", flush=True)
             return path
